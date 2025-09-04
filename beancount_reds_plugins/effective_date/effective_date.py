@@ -3,7 +3,7 @@
 from ast import literal_eval
 import copy
 import datetime
-import random
+import secrets
 import string
 import sys
 import time
@@ -16,13 +16,13 @@ __plugins__ = ['effective_date']
 # to enable the older transaction-level hacky plugin, now renamed to effective_date_transaction
 # __plugins__ = ['effective_date', 'effective_date_transaction']
 
-LINK_FORMAT = 'edate-{date}-{random}'
+LINK_FORMAT = "original_date_{date}_id_{random}"
 
 
 def has_valid_effective_date(posting):
     return posting.meta is not None and \
              'effective_date' in posting.meta and \
-             type(posting.meta['effective_date']) is datetime.date
+             (type(posting.meta['effective_date']) is datetime.date or posting.meta['effective_date'] == "N/A")
 
 
 def has_posting_with_valid_effective_date(entry):
@@ -94,8 +94,8 @@ def effective_date(entries, options_map, config):
     # entries, and thus links each set of effective date entries
     interesting_entries_linked = []
     for entry in interesting_entries:
-        rand_string = ''.join(random.choice(string.ascii_lowercase) for i in range(3))
-        date = str(entry.date).replace('-', '')[2:]
+        rand_string = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
+        date = entry.date.strftime("%Y-%m-%d")
         link = LINK_FORMAT.format(date=str(date), random=rand_string)
         new_entry = entry._replace(links=(entry.links or set()) | set([link]))
         interesting_entries_linked.append(new_entry)
@@ -114,7 +114,7 @@ def effective_date(entries, options_map, config):
 
                 # find earlier or later (is this necessary?)
                 holding_account = holding_accts[found_acct]['earlier']
-                if posting.meta['effective_date'] > entry.date:
+                if posting.meta['effective_date'] == 'N/A' or posting.meta['effective_date'] > entry.date:
                     holding_account = holding_accts[found_acct]['later']
 
                 # Replace posting in original entry with holding account
@@ -123,10 +123,11 @@ def effective_date(entries, options_map, config):
                 modified_entry_postings.append(new_posting)
 
                 # Create new entry at effective_date
-                hold_posting = new_posting._replace(units=-posting.units)
-                new_entry = create_new_effective_date_entry(entry, posting.meta['effective_date'],
-                                                            hold_posting, posting)
-                new_entries.append(new_entry)
+                if posting.meta["effective_date"] != "N/A":
+                    hold_posting = new_posting._replace(units=-posting.units)
+                    new_entry = create_new_effective_date_entry(entry, posting.meta['effective_date'],
+                                                                hold_posting, posting)
+                    new_entries.append(new_entry)
         modified_entry = entry._replace(postings=modified_entry_postings)
         new_entries.append(modified_entry)
 
