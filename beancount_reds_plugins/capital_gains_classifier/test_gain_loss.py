@@ -1,12 +1,11 @@
 __copyright__ = "Copyright (C) 2019  Red S"
 __license__ = "GNU GPLv3"
 
-from beancount.parser import cmptest
-from beancount_reds_plugins.capital_gains_classifier.gain_loss import gain_loss
-from beancount.parser import options
 # from beancount.parser import printer
 from beancount import loader
+from beancount.parser import cmptest, options
 
+from beancount_reds_plugins.capital_gains_classifier.gain_loss import gain_loss
 
 # TODO: test with multiple cases
 # "Income.*Capital-Gains:Short:.*: [":Short:", ":Short:Losses:", ":Short:Gains:"],
@@ -16,7 +15,6 @@ config = """{
 
 
 class TestGainLoss(cmptest.TestCase):
-
     def test_empty_entries(self):
         entries, _ = gain_loss([], options.OPTIONS_DEFAULTS.copy(), config)
         self.assertEqual([], entries)
@@ -46,7 +44,8 @@ class TestGainLoss(cmptest.TestCase):
 
         new_entries, _ = gain_loss(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Income:Capital-Gains
@@ -67,4 +66,6 @@ class TestGainLoss(cmptest.TestCase):
           Assets:Bank          50 USD
           Income:Capital-Gains:Losses 50 USD
 
-        """, new_entries)
+        """,
+            new_entries,
+        )

@@ -1,11 +1,11 @@
 import re
 import unittest
 
-import beancount_reds_plugins.zerosum.zerosum as zerosum
-
+from beancount import loader
 from beancount.core import data
 from beancount.parser import options
-from beancount import loader
+
+import beancount_reds_plugins.zerosum.zerosum as zerosum
 
 config = """{
  'zerosum_accounts' : {
@@ -20,14 +20,17 @@ config = """{
 
 def get_entries_with_acc_regexp(entries, regexp):
     print(regexp)
-    return [entry
-            for entry in entries
-            if (isinstance(entry, data.Transaction) and
-                any(re.search(regexp, posting.account) for posting in entry.postings))]
+    return [
+        entry
+        for entry in entries
+        if (
+            isinstance(entry, data.Transaction)
+            and any(re.search(regexp, posting.account) for posting in entry.postings)
+        )
+    ]
 
 
 class TestUnrealized(unittest.TestCase):
-
     def test_empty_entries(self):
         new_entries, _ = zerosum.zerosum([], options.OPTIONS_DEFAULTS.copy(), "{}")
         self.assertEqual([], new_entries)
@@ -70,14 +73,16 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
         self.assertEqual(3, len(matched))
 
         ref = [(0, 1), (0, 2), (1, 1), (2, 1)]
 
-        for (m, p) in ref:
-            self.assertEqual('Assets:ZSA-Matched:Returns-and-Temporary',
-                             matched[m].postings[p].account)
+        for m, p in ref:
+            self.assertEqual(
+                "Assets:ZSA-Matched:Returns-and-Temporary",
+                matched[m].postings[p].account,
+            )
 
     @loader.load_doc()
     def test_above_tolerance(self, entries, _, options_map):
@@ -94,13 +99,16 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
         self.assertEqual(2, len(matched))
 
         ref = [(0, 1), (1, 1)]
 
-        for (m, p) in ref:
-            self.assertEqual('Assets:ZSA-Matched:Returns-and-Temporary', matched[m].postings[p].account)
+        for m, p in ref:
+            self.assertEqual(
+                "Assets:ZSA-Matched:Returns-and-Temporary",
+                matched[m].postings[p].account,
+            )
 
     @loader.load_doc()
     def test_below_tolerance(self, entries, _, options_map):
@@ -117,13 +125,16 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
         self.assertEqual(2, len(matched))
 
         ref = [(0, 1), (1, 1)]
 
-        for (m, p) in ref:
-            self.assertEqual('Assets:ZSA-Matched:Returns-and-Temporary', matched[m].postings[p].account)
+        for m, p in ref:
+            self.assertEqual(
+                "Assets:ZSA-Matched:Returns-and-Temporary",
+                matched[m].postings[p].account,
+            )
 
     @loader.load_doc()
     def test_lookalike(self, entries, _, options_map):
@@ -137,13 +148,16 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
         self.assertEqual(1, len(matched))
 
         ref = [(0, 0), (0, 1)]
 
-        for (m, p) in ref:
-            self.assertEqual('Assets:ZSA-Matched:Returns-and-Temporary', matched[m].postings[p].account)
+        for m, p in ref:
+            self.assertEqual(
+                "Assets:ZSA-Matched:Returns-and-Temporary",
+                matched[m].postings[p].account,
+            )
 
     @loader.load_doc()
     def test_both_postings_in_one_txn(self, entries, _, options_map):
@@ -157,13 +171,16 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
         self.assertEqual(1, len(matched))
 
         ref = [(0, 0), (0, 1)]
 
-        for (m, p) in ref:
-            self.assertEqual('Assets:ZSA-Matched:Returns-and-Temporary', matched[m].postings[p].account)
+        for m, p in ref:
+            self.assertEqual(
+                "Assets:ZSA-Matched:Returns-and-Temporary",
+                matched[m].postings[p].account,
+            )
 
     @loader.load_doc()
     def test_two_matched_below_tolerance(self, entries, _, options_map):
@@ -178,11 +195,14 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched_txns = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched_txns = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
         self.assertEqual(1, len(matched_txns))
-        matched_postings = sum(map(
-            lambda posting: bool(re.search(':ZSA-Matched', posting.account)),
-            matched_txns[0].postings))
+        matched_postings = sum(
+            map(
+                lambda posting: bool(re.search(":ZSA-Matched", posting.account)),
+                matched_txns[0].postings,
+            )
+        )
         self.assertEqual(2, matched_postings)
 
     @loader.load_doc()
@@ -198,7 +218,7 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched_txns = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched_txns = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
         self.assertEqual(0, len(matched_txns))
 
     @loader.load_doc()
@@ -217,12 +237,12 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
 
         self.assertEqual(2, len(matched))
         for m in matched:
             for p in m.postings:
-                self.assertTrue('match_id' not in p.meta)
+                self.assertTrue("match_id" not in p.meta)
 
     @loader.load_doc()
     def test_match_id_successfully_added(self, entries, _, options_map):
@@ -247,18 +267,25 @@ class TestUnrealized(unittest.TestCase):
           Assets:Zero-Sum-Accounts:401k
         """
         new_entries, _ = zerosum.zerosum(
-            entries, options_map,
-            config[:-2] + """'match_metadata': True,\n}""")
+            entries, options_map, config[:-2] + """'match_metadata': True,\n}"""
+        )
 
         matched = dict(
-            [(m.narration, m) for m in
-             get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')])
+            [
+                (m.narration, m)
+                for m in get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
+            ]
+        )
 
         self.assertEqual(3, len(matched))
-        self.assertEqual(matched["Pay stub"].postings[1].meta['match_id'],
-                         matched["Bank account"].postings[1].meta['match_id'])
-        self.assertEqual(matched["Pay stub"].postings[2].meta['match_id'],
-                         matched["401k statement"].postings[1].meta['match_id'])
+        self.assertEqual(
+            matched["Pay stub"].postings[1].meta["match_id"],
+            matched["Bank account"].postings[1].meta["match_id"],
+        )
+        self.assertEqual(
+            matched["Pay stub"].postings[2].meta["match_id"],
+            matched["401k statement"].postings[1].meta["match_id"],
+        )
 
     @loader.load_doc()
     def test_match_name_successfully_changed(self, entries, _, options_map):
@@ -283,18 +310,28 @@ class TestUnrealized(unittest.TestCase):
           Assets:Zero-Sum-Accounts:401k
         """
         new_entries, _ = zerosum.zerosum(
-            entries, options_map,
-            config[:-2] + """'match_metadata': True,\n'match_metadata_name': 'MATCH'}""")
+            entries,
+            options_map,
+            config[:-2]
+            + """'match_metadata': True,\n'match_metadata_name': 'MATCH'}""",
+        )
 
         matched = dict(
-            [(m.narration, m) for m in
-             get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')])
+            [
+                (m.narration, m)
+                for m in get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
+            ]
+        )
 
         self.assertEqual(3, len(matched))
-        self.assertEqual(matched["Pay stub"].postings[1].meta['MATCH'],
-                         matched["Bank account"].postings[1].meta['MATCH'])
-        self.assertEqual(matched["Pay stub"].postings[2].meta['MATCH'],
-                         matched["401k statement"].postings[1].meta['MATCH'])
+        self.assertEqual(
+            matched["Pay stub"].postings[1].meta["MATCH"],
+            matched["Bank account"].postings[1].meta["MATCH"],
+        )
+        self.assertEqual(
+            matched["Pay stub"].postings[2].meta["MATCH"],
+            matched["401k statement"].postings[1].meta["MATCH"],
+        )
 
     @loader.load_doc()
     def test_no_links_by_default(self, entries, _, options_map):
@@ -312,7 +349,7 @@ class TestUnrealized(unittest.TestCase):
         """
         new_entries, _ = zerosum.zerosum(entries, options_map, config)
 
-        matched = get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')
+        matched = get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
 
         self.assertEqual(2, len(matched))
         for m in matched:
@@ -341,21 +378,40 @@ class TestUnrealized(unittest.TestCase):
           Assets:Zero-Sum-Accounts:401k
         """
         new_entries, _ = zerosum.zerosum(
-            entries, options_map,
-            config[:-2] + """'link_transactions': True,\n}""")
+            entries, options_map, config[:-2] + """'link_transactions': True,\n}"""
+        )
 
         matched = dict(
-            [(m.narration, m) for m in
-             get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')])
+            [
+                (m.narration, m)
+                for m in get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
+            ]
+        )
 
         self.assertEqual(3, len(matched))
 
         self.assertTrue(
-            any(link.startswith("ZeroSum.") for link in (matched["Pay stub"].links & matched["Bank account"].links)))
+            any(
+                link.startswith("ZeroSum.")
+                for link in (matched["Pay stub"].links & matched["Bank account"].links)
+            )
+        )
         self.assertTrue(
-            any(link.startswith("ZeroSum.") for link in (matched["Pay stub"].links & matched["401k statement"].links)))
+            any(
+                link.startswith("ZeroSum.")
+                for link in (
+                    matched["Pay stub"].links & matched["401k statement"].links
+                )
+            )
+        )
         self.assertFalse(
-            any(link.startswith("ZeroSum.") for link in (matched["Bank account"].links & matched["401k statement"].links)))
+            any(
+                link.startswith("ZeroSum.")
+                for link in (
+                    matched["Bank account"].links & matched["401k statement"].links
+                )
+            )
+        )
 
     @loader.load_doc()
     def test_link_prefix_successfully_changed(self, entries, _, options_map):
@@ -380,21 +436,42 @@ class TestUnrealized(unittest.TestCase):
           Assets:Zero-Sum-Accounts:401k
         """
         new_entries, _ = zerosum.zerosum(
-            entries, options_map,
-            config[:-2] + """'link_transactions': True,\n'link_prefix': 'ZSM'}""")
+            entries,
+            options_map,
+            config[:-2] + """'link_transactions': True,\n'link_prefix': 'ZSM'}""",
+        )
 
         matched = dict(
-            [(m.narration, m) for m in
-             get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')])
+            [
+                (m.narration, m)
+                for m in get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
+            ]
+        )
 
         self.assertEqual(3, len(matched))
 
         self.assertTrue(
-            any(link.startswith("ZSM") for link in (matched["Pay stub"].links & matched["Bank account"].links)))
+            any(
+                link.startswith("ZSM")
+                for link in (matched["Pay stub"].links & matched["Bank account"].links)
+            )
+        )
         self.assertTrue(
-            any(link.startswith("ZSM") for link in (matched["Pay stub"].links & matched["401k statement"].links)))
+            any(
+                link.startswith("ZSM")
+                for link in (
+                    matched["Pay stub"].links & matched["401k statement"].links
+                )
+            )
+        )
         self.assertFalse(
-            any(link.startswith("ZSM") for link in (matched["Bank account"].links & matched["401k statement"].links)))
+            any(
+                link.startswith("ZSM")
+                for link in (
+                    matched["Bank account"].links & matched["401k statement"].links
+                )
+            )
+        )
 
     @loader.load_doc()
     def test_metadata_independent_from_linking(self, entries, _, options_map):
@@ -419,19 +496,29 @@ class TestUnrealized(unittest.TestCase):
           Assets:Zero-Sum-Accounts:401k
         """
         new_entries, _ = zerosum.zerosum(
-            entries, options_map,
-            config[:-2] + """'match_metadata': True,\n'match_metadata_name': 'MATCH',\n
-            'link_transactions': False,\n'link_prefix': 'ZSM'\n}""")
+            entries,
+            options_map,
+            config[:-2]
+            + """'match_metadata': True,\n'match_metadata_name': 'MATCH',\n
+            'link_transactions': False,\n'link_prefix': 'ZSM'\n}""",
+        )
 
         matched = dict(
-            [(m.narration, m) for m in
-             get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')])
+            [
+                (m.narration, m)
+                for m in get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
+            ]
+        )
 
         self.assertEqual(3, len(matched))
-        self.assertEqual(matched["Pay stub"].postings[1].meta['MATCH'],
-                         matched["Bank account"].postings[1].meta['MATCH'])
-        self.assertEqual(matched["Pay stub"].postings[2].meta['MATCH'],
-                         matched["401k statement"].postings[1].meta['MATCH'])
+        self.assertEqual(
+            matched["Pay stub"].postings[1].meta["MATCH"],
+            matched["Bank account"].postings[1].meta["MATCH"],
+        )
+        self.assertEqual(
+            matched["Pay stub"].postings[2].meta["MATCH"],
+            matched["401k statement"].postings[1].meta["MATCH"],
+        )
 
         for _, m in matched.items():
             self.assertFalse(any(link.startswith("ZSM") for link in m.links))
@@ -459,22 +546,44 @@ class TestUnrealized(unittest.TestCase):
           Assets:Zero-Sum-Accounts:401k
         """
         new_entries, _ = zerosum.zerosum(
-            entries, options_map,
-            config[:-2] + """'match_metadata': False,\n'match_metadata_name': 'MATCH',\n
-            'link_transactions': True,\n'link_prefix': 'ZSM'\n}""")
+            entries,
+            options_map,
+            config[:-2]
+            + """'match_metadata': False,\n'match_metadata_name': 'MATCH',\n
+            'link_transactions': True,\n'link_prefix': 'ZSM'\n}""",
+        )
 
         matched = dict(
-            [(m.narration, m) for m in
-             get_entries_with_acc_regexp(new_entries, ':ZSA-Matched')])
+            [
+                (m.narration, m)
+                for m in get_entries_with_acc_regexp(new_entries, ":ZSA-Matched")
+            ]
+        )
 
         self.assertEqual(3, len(matched))
         for _, m in matched.items():
             for p in m.postings:
-                self.assertTrue('MATCH' not in p.meta)
+                self.assertTrue("MATCH" not in p.meta)
 
         self.assertTrue(
-            any(link.startswith("ZSM") for link in (matched["Pay stub"].links & matched["Bank account"].links)))
+            any(
+                link.startswith("ZSM")
+                for link in (matched["Pay stub"].links & matched["Bank account"].links)
+            )
+        )
         self.assertTrue(
-            any(link.startswith("ZSM") for link in (matched["Pay stub"].links & matched["401k statement"].links)))
+            any(
+                link.startswith("ZSM")
+                for link in (
+                    matched["Pay stub"].links & matched["401k statement"].links
+                )
+            )
+        )
         self.assertFalse(
-            any(link.startswith("ZSM") for link in (matched["Bank account"].links & matched["401k statement"].links)))
+            any(
+                link.startswith("ZSM")
+                for link in (
+                    matched["Bank account"].links & matched["401k statement"].links
+                )
+            )
+        )

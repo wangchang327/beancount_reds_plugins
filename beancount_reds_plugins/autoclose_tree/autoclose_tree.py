@@ -28,11 +28,12 @@ plugin "beancount.plugins.close_tree"
 """
 
 import time
+
 from beancount.core import data
-from beancount.core.data import Open, Close
+from beancount.core.data import Close, Open
 
 DEBUG = 0
-__plugins__ = ('autoclose_tree',)
+__plugins__ = ("autoclose_tree",)
 
 
 def autoclose_tree(entries, unused_options_map):
@@ -42,7 +43,7 @@ def autoclose_tree(entries, unused_options_map):
       entries: A list of directives. We're interested only in the Open/Close instances.
       unused_options_map: A parser options dict.
     Returns:
-      A tuple of entries and errors. """
+      A tuple of entries and errors."""
 
     start_time = time.time()
     close_count = 0
@@ -53,13 +54,19 @@ def autoclose_tree(entries, unused_options_map):
     closes = set(e.account for e in entries if isinstance(e, Close))
 
     for entry in entries:
-        if isinstance(entry,  Close):
-            subaccounts = [a for a in opens if a.startswith(entry.account + ':') and a not in closes]
+        if isinstance(entry, Close):
+            subaccounts = [
+                a
+                for a in opens
+                if a.startswith(entry.account + ":") and a not in closes
+            ]
             for subacc in subaccounts:
-                meta = data.new_metadata('<beancount.plugins.close_tree>', 0)
+                meta = data.new_metadata("<beancount.plugins.close_tree>", 0)
                 close_entry = data.Close(meta, entry.date, subacc)
                 new_entries.append(close_entry)
-                closes.add(subacc)  # So we don't attempt to re-close a grandchild that a child closed
+                closes.add(
+                    subacc
+                )  # So we don't attempt to re-close a grandchild that a child closed
             if entry.account in opens:
                 new_entries.append(entry)
         else:
@@ -67,5 +74,9 @@ def autoclose_tree(entries, unused_options_map):
 
     if DEBUG:
         elapsed_time = time.time() - start_time
-        print("Close account tree [{:.2f}s]: {} close entries added.".format(elapsed_time, close_count))
+        print(
+            "Close account tree [{:.2f}s]: {} close entries added.".format(
+                elapsed_time, close_count
+            )
+        )
     return new_entries, errors

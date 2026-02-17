@@ -1,6 +1,8 @@
 from datetime import date
 from decimal import Decimal
+
 from beancount.loader import load_string
+
 from beancount_reds_plugins.box_accrual import box_accrual
 
 

@@ -1,14 +1,15 @@
 __copyright__ = "Copyright (C) 2020  Red S"
 __license__ = "GNU GPLv3"
 
-import unittest
+import datetime
 import re
+import unittest
 
-from beancount_reds_plugins.effective_date.effective_date import effective_date
+from beancount import loader
 from beancount.core import data
 from beancount.parser import options
-from beancount import loader
-import datetime
+
+from beancount_reds_plugins.effective_date.effective_date import effective_date
 
 
 def get_entries_with_narration(entries, regexp):
@@ -21,14 +22,14 @@ def get_entries_with_narration(entries, regexp):
     Returns:
       A list of directives.
     """
-    return [entry
-            for entry in entries
-            if (isinstance(entry, data.Transaction) and
-                re.search(regexp, entry.narration))]
+    return [
+        entry
+        for entry in entries
+        if (isinstance(entry, data.Transaction) and re.search(regexp, entry.narration))
+    ]
 
 
 class TestEffectiveDate(unittest.TestCase):
-
     def test_empty_entries(self):
         entries, _ = effective_date([], options.OPTIONS_DEFAULTS.copy(), None)
         self.assertEqual([], entries)
@@ -42,7 +43,7 @@ class TestEffectiveDate(unittest.TestCase):
         2014-02-01 * "Estimated taxes for 2013"
           Liabilities:Mastercard    -2000 USD
           Expenses:Taxes:Federal  2000 USD
-         """
+        """
         new_entries, _ = effective_date(entries, options_map, None)
         self.assertEqual(new_entries, entries)
 
@@ -87,25 +88,25 @@ class TestEffectiveDate(unittest.TestCase):
         # self.assertEqual(D("24.00"), entry.postings[0].units.number)
         # self.assertEqual(D("-24.00"), entry.postings[1].units.number)
 
-#    def test_expense_later(self, entries, _, options_map):
-#        """
-#        2014-01-01 open Liabilities:Mastercard
-#        2014-01-01 open Expenses:Rent
-#
-#        2014-02-01 "Rent"
-#          Liabilities:Mastercard    -2000 USD
-#          Expenses:Rent              2000 USD
-#            effective_date: 2014-05-01
-#        """
-#
-#        # Above should turn into:
-#        # 2014-02-01 "Rent"
-#        #   Liabilities:Mastercard     -2000 USD
-#        #   Liabilities:Hold:Rent 2000 USD
-#
-#        # 2014-05-01 "Rent"
-#        #   Liabilities:Hold:Rent -2000 USD
-#        #   Expenses:Rent     2000 USD
+    #    def test_expense_later(self, entries, _, options_map):
+    #        """
+    #        2014-01-01 open Liabilities:Mastercard
+    #        2014-01-01 open Expenses:Rent
+    #
+    #        2014-02-01 "Rent"
+    #          Liabilities:Mastercard    -2000 USD
+    #          Expenses:Rent              2000 USD
+    #            effective_date: 2014-05-01
+    #        """
+    #
+    #        # Above should turn into:
+    #        # 2014-02-01 "Rent"
+    #        #   Liabilities:Mastercard     -2000 USD
+    #        #   Liabilities:Hold:Rent 2000 USD
+    #
+    #        # 2014-05-01 "Rent"
+    #        #   Liabilities:Hold:Rent -2000 USD
+    #        #   Expenses:Rent     2000 USD
 
     @loader.load_doc()
     def test_expense_later_multiple(self, entries, _, options_map):
@@ -153,7 +154,7 @@ class TestEffectiveDate(unittest.TestCase):
           Liabilities:Mastercard    -2000 USD
           Expenses:Taxes:Federal  2000 USD
             effective_date: 2014-02-01
-         """
+        """
         new_entries, errors = effective_date(entries, options_map, None)
         self.assertEqual(1, len(errors))
         self.assertEqual(new_entries, entries)

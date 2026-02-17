@@ -165,12 +165,11 @@ import datetime
 import random
 import string
 import time
-
 from ast import literal_eval
 from collections import defaultdict
 
-from beancount.core import data
-from beancount.core import flags
+from beancount.core import data, flags
+
 from beancount_reds_plugins.common import common
 
 DEBUG = 0
@@ -179,7 +178,10 @@ MATCHING_ID_STRING = "match_id"
 LINK_PREFIX = "ZeroSum."
 random.seed(6)  # arbitrary fixed seed
 
-__plugins__ = ('zerosum', 'flag_unmatched',)
+__plugins__ = (
+    "zerosum",
+    "flag_unmatched",
+)
 
 
 # replace the account on a given posting with a new account
@@ -246,7 +248,7 @@ def zerosum(entries, options_map, config):  # noqa: C901
     """
 
     def find_match():
-        '''Look forward to find a match, until date range is exceeded'''
+        """Look forward to find a match, until date range is exceeded"""
         max_date = txn.date + datetime.timedelta(days=date_range)
 
         for j in range(i, len(zerosum_txns)):
@@ -257,15 +259,16 @@ def zerosum(entries, options_map, config):  # noqa: C901
                 if p is posting:
                     # Don't match with the same exact posting.
                     continue
-                if (abs(p.units.number + posting.units.number) < tolerance
-                   and p.account == zs_account):
+                if (
+                    abs(p.units.number + posting.units.number) < tolerance
+                    and p.account == zs_account
+                ):
                     return (p, t)
         return None
 
     def generate_match_id():
-        '''Generates a random string to be used as the match ID.'''
-        return ''.join(
-            random.choices(string.ascii_letters + string.digits, k=20))
+        """Generates a random string to be used as the match ID."""
+        return "".join(random.choices(string.ascii_letters + string.digits, k=20))
 
     if DEBUG:
         # pr = cProfile.Profile()
@@ -273,13 +276,15 @@ def zerosum(entries, options_map, config):  # noqa: C901
         start_time = time.time()
 
     config_obj = literal_eval(config)  # TODO: error check
-    zs_accounts_list = config_obj.pop('zerosum_accounts', {})
-    (account_name_from, account_name_to) = config_obj.pop('account_name_replace', ('', ''))
-    tolerance = config_obj.pop('tolerance', DEFAULT_TOLERANCE)
-    match_metadata = config_obj.pop('match_metadata', False)
-    match_metadata_name = config_obj.pop('match_metadata_name', MATCHING_ID_STRING)
-    link_transactions = config_obj.pop('link_transactions', False)
-    link_prefix = config_obj.pop('link_prefix', LINK_PREFIX)
+    zs_accounts_list = config_obj.pop("zerosum_accounts", {})
+    (account_name_from, account_name_to) = config_obj.pop(
+        "account_name_replace", ("", "")
+    )
+    tolerance = config_obj.pop("tolerance", DEFAULT_TOLERANCE)
+    match_metadata = config_obj.pop("match_metadata", False)
+    match_metadata_name = config_obj.pop("match_metadata_name", MATCHING_ID_STRING)
+    link_transactions = config_obj.pop("link_transactions", False)
+    link_prefix = config_obj.pop("link_prefix", LINK_PREFIX)
 
     new_accounts = set()
     zerosum_postings_count = 0
@@ -319,14 +324,22 @@ def zerosum(entries, options_map, config):  # noqa: C901
                             #         posting.units, posting.meta['lineno'], match[0].meta['lineno'])
                             match_count += 1
 
-                            account_replace(txn,      posting,  target_account)
+                            account_replace(txn, posting, target_account)
                             account_replace(match[1], match[0], target_account)
 
-                            match_id = generate_match_id() if match_metadata or link_transactions else None
+                            match_id = (
+                                generate_match_id()
+                                if match_metadata or link_transactions
+                                else None
+                            )
 
                             if match_metadata:
-                                metadata_update(txn, posting, match_id, match_metadata_name)
-                                metadata_update(match[1], match[0], match_id, match_metadata_name)
+                                metadata_update(
+                                    txn, posting, match_id, match_metadata_name
+                                )
+                                metadata_update(
+                                    match[1], match[0], match_id, match_metadata_name
+                                )
 
                             if link_transactions:
                                 transaction_update(txn, match_id, link_prefix)
@@ -336,7 +349,9 @@ def zerosum(entries, options_map, config):  # noqa: C901
                             reprocess = True
                             break
 
-    new_open_entries = common.create_open_directives(new_accounts, entries, meta_desc='<zerosum>')
+    new_open_entries = common.create_open_directives(
+        new_accounts, entries, meta_desc="<zerosum>"
+    )
 
     if link_transactions:
         for i, entry in enumerate(entries):
@@ -347,8 +362,15 @@ def zerosum(entries, options_map, config):  # noqa: C901
 
     if DEBUG:
         elapsed_time = time.time() - start_time
-        print("Zerosum [{:.1f}s]: {}/{} postings matched from {} transactions. {} new accounts added.".format(
-            elapsed_time, match_count*2, zerosum_postings_count, len(entries), len(new_open_entries)))
+        print(
+            "Zerosum [{:.1f}s]: {}/{} postings matched from {} transactions. {} new accounts added.".format(
+                elapsed_time,
+                match_count * 2,
+                zerosum_postings_count,
+                len(entries),
+                len(new_open_entries),
+            )
+        )
         # pr.disable()
         # pr.dump_stats('out.profile')
 
@@ -356,14 +378,14 @@ def zerosum(entries, options_map, config):  # noqa: C901
 
 
 def flag_unmatched(entries, unused_options_map, config):
-    '''Iterate again, to flag unmatched entries'''
+    """Iterate again, to flag unmatched entries"""
 
     config_obj = literal_eval(config)
-    if not config_obj.get('flag_unmatched'):
+    if not config_obj.get("flag_unmatched"):
         return (entries, [])
 
     new_entries = []
-    zs_accounts = config_obj['zerosum_accounts'].keys()
+    zs_accounts = config_obj["zerosum_accounts"].keys()
     for entry in entries:
         if isinstance(entry, data.Transaction):
             for posting in entry.postings:

@@ -1,8 +1,9 @@
 """TODO"""
 
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
-from beancount.core import data, amount
+from decimal import ROUND_HALF_UP, Decimal
+
+from beancount.core import amount, data
 
 PLUGIN_NAME = "beancount_reds_plugins.box_accrual.box_accrual"
 __plugins__ = ("box_accrual",)
