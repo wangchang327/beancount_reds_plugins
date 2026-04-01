@@ -1,15 +1,17 @@
-"""Rebooks capital gains accounts into separate gains and losses accounts
-"""
+"""Rebooks capital gains accounts into separate gains and losses accounts"""
 
 import re
 import time
-from beancount.core import data
 from ast import literal_eval
+
+from beancount.core import data
+
 from beancount_reds_plugins.common import common
+
 # from beancount.parser import printer
 
 DEBUG = 0
-__plugins__ = ('gain_loss',)
+__plugins__ = ("gain_loss",)
 
 
 def account_replace(txn, posting, new_account):
@@ -24,16 +26,16 @@ def account_replace(txn, posting, new_account):
 def gain_loss(entries, options_map, config):
     """Replace :Capital-Gains: in transactions with :Capital-Gains:Gains: or :Capital-Gains:Losses:
 
-      config: a dict listing rewrites. Eg:
-      { "Income.*:Capital-Gains.*" : [":Capital-Gains",  ":Capital-Gains:Gains",  ":Capital-Gains:Losses"],
-        ...
-      }
+    config: a dict listing rewrites. Eg:
+    { "Income.*:Capital-Gains.*" : [":Capital-Gains",  ":Capital-Gains:Gains",  ":Capital-Gains:Losses"],
+      ...
+    }
 
-      <key> : [<substring_to_replace>, <replacement_for_gains>, <replacement_for_losses>]
-      Note that <key> is a regexp while the remaining values are strings
+    <key> : [<substring_to_replace>, <replacement_for_gains>, <replacement_for_losses>]
+    Note that <key> is a regexp while the remaining values are strings
 
-      where <key> is a regexp to match in a posting account.
-      """
+    where <key> is a regexp to match in a posting account.
+    """
 
     start_time = time.time()
     rewrite_count = 0
@@ -50,16 +52,26 @@ def gain_loss(entries, options_map, config):
                 for r, pat in account_matches:
                     if pat.match(account):
                         if posting.units.number < 0:
-                            account = account.replace(rewrites[r][0], rewrites[r][1])  # gains
+                            account = account.replace(
+                                rewrites[r][0], rewrites[r][1]
+                            )  # gains
                         else:
-                            account = account.replace(rewrites[r][0], rewrites[r][2])  # losses
+                            account = account.replace(
+                                rewrites[r][0], rewrites[r][2]
+                            )  # losses
                         rewrite_count += 1
                         if account not in new_accounts:
                             new_accounts.append(account)
                         account_replace(entry, posting, account)
 
-    new_open_entries = common.create_open_directives(new_accounts, entries, meta_desc="gains_losses")
+    new_open_entries = common.create_open_directives(
+        new_accounts, entries, meta_desc="gains_losses"
+    )
     if DEBUG:
         elapsed_time = time.time() - start_time
-        print("Gain/loss gains classifier [{:.2f}s]: {} postings classified.".format(elapsed_time, rewrite_count))
+        print(
+            "Gain/loss gains classifier [{:.2f}s]: {} postings classified.".format(
+                elapsed_time, rewrite_count
+            )
+        )
     return new_open_entries + entries, errors

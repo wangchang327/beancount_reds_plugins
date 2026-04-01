@@ -21,19 +21,19 @@ TODO:
 
 import re
 import time
+from ast import literal_eval
 
 from beancount.core import data
-from ast import literal_eval
 from dateutil import relativedelta
+
 from beancount_reds_plugins.common import common
 
 DEBUG = 0
-__plugins__ = ('long_short',)
+__plugins__ = ("long_short",)
 
 
 def long_short(entries, options_map, config):  # noqa: C901
-    """Replace :Capital-Gains: in transactions with :Capital-Gains:Short: and/or :Capital-Gains:Long:
-    """
+    """Replace :Capital-Gains: in transactions with :Capital-Gains:Short: and/or :Capital-Gains:Long:"""
 
     start_time = time.time()
     rewrite_count_matches = rewrite_count_short = rewrite_count_long = 0
@@ -43,11 +43,16 @@ def long_short(entries, options_map, config):  # noqa: C901
     config_obj = literal_eval(config)
     acct_match_regex = next(iter(config_obj))
     acct_match = re.compile(acct_match_regex)
-    account_to_replace, short_account_repl, long_account_repl = config_obj[acct_match_regex]
+    account_to_replace, short_account_repl, long_account_repl = config_obj[
+        acct_match_regex
+    ]
 
     def contains_shortlong_postings(entry):
-        return any(short_account_repl in posting.account or long_account_repl in posting.account
-                   for posting in entry.postings)
+        return any(
+            short_account_repl in posting.account
+            or long_account_repl in posting.account
+            for posting in entry.postings
+        )
 
     def contains_generic(entry):
         return any(acct_match.match(posting.account) for posting in entry.postings)
@@ -59,16 +64,23 @@ def long_short(entries, options_map, config):  # noqa: C901
         # If the entry doesn't contain a price (p.price == None), it will remain in the parent
         # (:Capital-Gains) account, which can make it a pain to debug. At least warn the user
         # somehow, or collect these in a separate error account
-        return [p for p in entry.postings if (p.cost and p.units.number and p.price is not None)]
+        return [
+            p
+            for p in entry.postings
+            if (p.cost and p.units.number and p.price is not None)
+        ]
 
     def sale_type(p, entry_date):
         diff = relativedelta.relativedelta(entry_date, p.cost.date)
-        gain = (p.cost.number - p.price.number) * abs(p.units.number)  # Income is negative
+        gain = (p.cost.number - p.price.number) * abs(
+            p.units.number
+        )  # Income is negative
         # relativedelta is used to account for leap years. IRS' definition is at the bottom of the file
-        return diff.years > 1 or (diff.years == 1 and (diff.months >= 1 or diff.days >= 1)), gain
+        return diff.years > 1 or (
+            diff.years == 1 and (diff.months >= 1 or diff.days >= 1)
+        ), gain
 
     for entry in entries:
-
         # identify reduction transactions
         # determine long vs short for each lot
         # replace cap gains account with above
@@ -82,7 +94,9 @@ def long_short(entries, options_map, config):  # noqa: C901
             long_gains = sum(s[1] for s in sale_types) - short_gains
 
             # record and remove generic capital gains postings
-            orig_gains_postings = [p for p in entry.postings if acct_match.match(p.account)]
+            orig_gains_postings = [
+                p for p in entry.postings if acct_match.match(p.account)
+            ]
             orig_sum = sum(p.units.number for p in orig_gains_postings)
             for p in orig_gains_postings:
                 entry.postings.remove(p)
@@ -91,10 +105,10 @@ def long_short(entries, options_map, config):  # noqa: C901
             diff = orig_sum - (short_gains + long_gains)
             # divide this diff among short/long. TODO: warn if this is over tolerance threshold, because it
             # means that the transaction is probably not accounted for correctly
-            if abs(diff) >= entry.meta['__tolerances__'][p.units.currency]:
+            if abs(diff) >= entry.meta["__tolerances__"][p.units.currency]:
                 total = short_gains + long_gains
-                short_gains += (short_gains/total) * diff
-                long_gains += (long_gains/total) * diff
+                short_gains += (short_gains / total) * diff
+                long_gains += (long_gains / total) * diff
 
             orig_p = orig_gains_postings[0]
 
@@ -115,12 +129,21 @@ def long_short(entries, options_map, config):  # noqa: C901
                 rewrite_count_long += 1
 
     # create open entries
-    new_open_entries = common.create_open_directives(new_accounts, entries, meta_desc='<long_short>')
+    new_open_entries = common.create_open_directives(
+        new_accounts, entries, meta_desc="<long_short>"
+    )
     if DEBUG:
         elapsed_time = time.time() - start_time
-        print("Long/short gains classifier [{:.2f}s]: {} matched. {} short, {} long postings added.".format(
-              elapsed_time, rewrite_count_matches, rewrite_count_short, rewrite_count_long))
+        print(
+            "Long/short gains classifier [{:.2f}s]: {} matched. {} short, {} long postings added.".format(
+                elapsed_time,
+                rewrite_count_matches,
+                rewrite_count_short,
+                rewrite_count_long,
+            )
+        )
     return new_open_entries + entries, errors
+
 
 # IRS references:
 #

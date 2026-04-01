@@ -49,3 +49,14 @@ In short (this is for `zsh`, adapt to your shell as needed):
 ```
 bean-extract my.import -f <(echo 'plugin "beancount.plugins.auto_accounts"'; cat ${INGEST_ROOT}/../source/*) $file
 ```
+
+## Contributions
+
+Features, fixes, and improvements welcome. Remember:
+- Feel free to send send pull requests. Please include unit tests
+- For larger changes or changes that might need discussion, please reach out and discuss
+  first to save time (open an issue) 
+- Please squash your commits (reasonably)
+- Use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages
+
+Thank you for contributing!

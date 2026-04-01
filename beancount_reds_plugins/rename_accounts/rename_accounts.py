@@ -3,10 +3,11 @@
 import re
 import time
 from ast import literal_eval
+
 from beancount.core import data
 
 DEBUG = 0
-__plugins__ = ('rename_accounts',)
+__plugins__ = ("rename_accounts",)
 
 
 def rename_accounts(entries, options_map, config):  # noqa: C901
@@ -21,15 +22,19 @@ def rename_accounts(entries, options_map, config):  # noqa: C901
       listing renames. Eg: "{'Expenses:Taxes' : 'Income:Taxes'}"
 
     Returns:
-      A tuple of entries and errors. """
+      A tuple of entries and errors."""
 
     start_time = time.time()
     rename_count = 0
     new_entries = []
     errors = []
 
-    renames = dict([(re.compile(pattern), replacement)
-                    for pattern, replacement in literal_eval(config).items()])
+    renames = dict(
+        [
+            (re.compile(pattern), replacement)
+            for pattern, replacement in literal_eval(config).items()
+        ]
+    )
 
     def rename_account(account):
         """Apply 'renames' to 'account'.
@@ -46,7 +51,7 @@ def rename_accounts(entries, options_map, config):  # noqa: C901
                 was_renamed = True
         return account, was_renamed
 
-    def rename_account_in_entry(entry, account_attr='account'):
+    def rename_account_in_entry(entry, account_attr="account"):
         """Apply 'renames' to 'getattr(entry, account_attr)'.
 
         Return the resulting entry and whether or not it was renamed.
@@ -54,7 +59,9 @@ def rename_accounts(entries, options_map, config):  # noqa: C901
         """
         old_account = getattr(entry, account_attr)
         new_account, was_renamed = rename_account(old_account)
-        new_entry = entry._replace(**{account_attr: new_account}) if was_renamed else entry
+        new_entry = (
+            entry._replace(**{account_attr: new_account}) if was_renamed else entry
+        )
         return new_entry, was_renamed
 
     for entry in entries:
@@ -65,18 +72,38 @@ def rename_accounts(entries, options_map, config):  # noqa: C901
                 new_posting, was_renamed = rename_account_in_entry(posting)
                 any_posting_changed = any_posting_changed or was_renamed
                 new_postings.append(new_posting)
-            new_entry = entry._replace(postings=new_postings) if any_posting_changed else entry
+            new_entry = (
+                entry._replace(postings=new_postings) if any_posting_changed else entry
+            )
         elif isinstance(entry, data.Pad):
-            new_entry, _ = rename_account_in_entry(entry, 'account')
-            new_entry, _ = rename_account_in_entry(new_entry, 'source_account')
-        elif hasattr(entry, 'account'):
+            new_entry, _ = rename_account_in_entry(entry, "account")
+            new_entry, _ = rename_account_in_entry(new_entry, "source_account")
+        elif hasattr(entry, "account"):
             new_entry, _ = rename_account_in_entry(entry)
         else:
             new_entry = entry
 
         new_entries.append(new_entry)
 
+    # Dedupe Open directives to handle multiple accounts being renamed to the same
+    # target. We preserve original ordering and retain only the first of multiple open
+    # directives. This has the effect of preferring directives in the source over
+    # directives inserted by this plugin along with metadata.
+    seen_opens = set()
+    deduped_entries = []
+    for entry in new_entries:
+        if isinstance(entry, data.Open):
+            if entry.account in seen_opens:
+                continue
+            seen_opens.add(entry.account)
+        deduped_entries.append(entry)
+    new_entries = deduped_entries
+
     if DEBUG:
         elapsed_time = time.time() - start_time
-        print("Rename accounts [{:.2f}s]: {} postings renamed.".format(elapsed_time, rename_count))
+        print(
+            "Rename accounts [{:.2f}s]: {} postings renamed.".format(
+                elapsed_time, rename_count
+            )
+        )
     return new_entries, errors

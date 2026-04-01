@@ -1,10 +1,10 @@
 __copyright__ = "Copyright (C) 2021  Red S"
 __license__ = "GNU GPLv3"
 
-from beancount_reds_plugins.capital_gains_classifier.long_short import long_short
-from beancount.parser import options
 from beancount import loader
-from beancount.parser import cmptest
+from beancount.parser import cmptest, options
+
+from beancount_reds_plugins.capital_gains_classifier.long_short import long_short
 
 # TODO:
 # def test_auto_lot_matching(self, entries, _, options_map):
@@ -61,7 +61,8 @@ class TestLongShort(cmptest.TestCase):
 
         new_entries, _ = long_short(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Income:Capital-Gains
@@ -75,7 +76,9 @@ class TestLongShort(cmptest.TestCase):
           Assets:Brokerage   -100 ORNG {1 USD} @ 1.50 USD
           Assets:Bank         150 USD
           Income:Capital-Gains:Long -50.00 USD
-        """, new_entries)
+        """,
+            new_entries,
+        )
 
     @loader.load_doc()
     def test_long_exactly_one_year_and_month(self, entries, _, options_map):
@@ -97,7 +100,8 @@ class TestLongShort(cmptest.TestCase):
 
         new_entries, _ = long_short(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Income:Capital-Gains
@@ -111,7 +115,9 @@ class TestLongShort(cmptest.TestCase):
           Assets:Brokerage   -100 ORNG {1 USD} @ 1.50 USD
           Assets:Bank         150 USD
           Income:Capital-Gains:Long -50.00 USD
-        """, new_entries)
+        """,
+            new_entries,
+        )
 
     @loader.load_doc()
     def test_short(self, entries, _, options_map):
@@ -132,7 +138,8 @@ class TestLongShort(cmptest.TestCase):
 
         new_entries, _ = long_short(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Income:Capital-Gains
@@ -146,7 +153,9 @@ class TestLongShort(cmptest.TestCase):
           Assets:Brokerage   -100 ORNG {1 USD} @ 1.50 USD
           Assets:Bank         150 USD
           Income:Capital-Gains:Short -50.00 USD
-        """, new_entries)
+        """,
+            new_entries,
+        )
 
     @loader.load_doc()
     def test_mixed(self, entries, _, options_map):
@@ -171,7 +180,8 @@ class TestLongShort(cmptest.TestCase):
         """
         new_entries, _ = long_short(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Income:Capital-Gains
@@ -192,7 +202,9 @@ class TestLongShort(cmptest.TestCase):
           Assets:Bank         500 USD
           Income:Capital-Gains:Short  -50.0000 USD
           Income:Capital-Gains:Long  -150.0000 USD
-        """, new_entries)
+        """,
+            new_entries,
+        )
 
     @loader.load_doc()
     def test_leap_year(self, entries, _, options_map):
@@ -213,7 +225,8 @@ class TestLongShort(cmptest.TestCase):
 
         new_entries, _ = long_short(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Income:Capital-Gains
@@ -227,7 +240,9 @@ class TestLongShort(cmptest.TestCase):
           Assets:Brokerage   -100 ORNG {1 USD} @ 1.50 USD
           Assets:Bank         150 USD
           Income:Capital-Gains:Short -50.00 USD
-        """, new_entries)
+        """,
+            new_entries,
+        )
 
     @loader.load_doc()
     def test_fee(self, entries, _, options_map):
@@ -249,7 +264,8 @@ class TestLongShort(cmptest.TestCase):
         """
         new_entries, _ = long_short(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Expenses:Fees
@@ -265,7 +281,9 @@ class TestLongShort(cmptest.TestCase):
           Assets:Bank         140 USD
           Income:Capital-Gains:Short -50.00 USD
           Expenses:Fees        10 USD
-        """, new_entries)
+        """,
+            new_entries,
+        )
 
     @loader.load_doc()
     def test_shortposition_reduction(self, entries, _, options_map):
@@ -286,7 +304,8 @@ class TestLongShort(cmptest.TestCase):
         """
         new_entries, _ = long_short(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Expenses:Fees
@@ -301,7 +320,9 @@ class TestLongShort(cmptest.TestCase):
           Assets:Brokerage    100 ORNG {1 USD} @ 0.50 USD
           Assets:Bank         -50 USD
           Income:Capital-Gains:Long -50.00 USD
-        """, new_entries)
+        """,
+            new_entries,
+        )
 
     @loader.load_doc()
     def test_zero_missing_price(self, entries, _, options_map):
@@ -325,7 +346,8 @@ class TestLongShort(cmptest.TestCase):
         """
         new_entries, _ = long_short(entries, options_map, config)
 
-        self.assertEqualEntries("""
+        self.assertEqualEntries(
+            """
         2014-01-01 open Assets:Brokerage
         2014-01-01 open Assets:Bank
         2014-01-01 open Income:Capital-Gains
@@ -344,4 +366,6 @@ class TestLongShort(cmptest.TestCase):
           Assets:Bank           100 USD
           Income:Capital-Gains  -50 USD
 
-        """, new_entries)
+        """,
+            new_entries,
+        )
